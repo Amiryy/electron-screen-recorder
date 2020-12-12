@@ -1,4 +1,4 @@
-# electron-screen-recorder
+# Electron Screen Recording
 Screen recording desktop app using electron.
 
 This was done with a tutorial by fireship.io
