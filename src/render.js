@@ -1,7 +1,8 @@
 const { desktopCapturer, remote } = require("electron");
 const { Menu, dialog } = remote;
-const { filePath } = require("fs");
+const { writeFile } = require("fs");
 
+const videoMimeType = "video/webm; codecs=vp9";
 const videoElement = document.querySelector("video");
 const startBtn = document.querySelector("#startBtn");
 const stopBtn = document.querySelector("#stopBtn");
@@ -11,11 +12,18 @@ let mediaRecorder; // MediaRecorder instance to capture footage
 const recordedChunks = [];
 
 videoSelectBtn.onclick = getVideoSources;
+
 startBtn.onclick = () => {
-  startBtn.classList.add("red");
-  startBtn.classList.add("disabled")
-  startBtn.innerText = "Recording";
+  if(mediaRecorder) {
+    mediaRecorder.start();
+  }
 };
+
+stopBtn.onclick = () => { 
+  if(mediaRecorder) {
+    mediaRecorder.stop();
+  }
+}
 
 // get available video sources
 async function getVideoSources() {
@@ -35,7 +43,9 @@ async function getVideoSources() {
 
 async function selectSource(source) {
   videoSelectBtn.innerText = source.name;
-  
+  startBtn.classList.remove("disabled");
+  stopBtn.classList.remove("disabled");
+
   const contstrains = {
     audio: false,
     video: {
@@ -54,12 +64,13 @@ async function selectSource(source) {
   videoElement.onloadedmetadata = () => videoElement.play();
   
   // create the Media Recorder
-  const recorderOptions = { mimeType: "video/webm; codecs=vp9" };
+  const recorderOptions = { mimeType: videoMimeType };
   mediaRecorder = new MediaRecorder(stream, recorderOptions);
 
   // Register Event Handlers
   mediaRecorder.ondataavailable = handleDataAvailable;
   mediaRecorder.onstop = handleStop;
+  mediaRecorder.onstart = handleStart;
 }
 
 function handleDataAvailable(e) {
@@ -67,19 +78,22 @@ function handleDataAvailable(e) {
   recordedChunks.push(e.data);
 }
 
+async function handleStart(e) {
+  startBtn.classList.add("red");
+  startBtn.innerText = "Recording";
+}
+
 async function handleStop(e) {
-  const blob = new Blob(recordedChunks, {
-    type: "video/webm; codecs=vp9"
-  });
+  startBtn.classList.remove("red");
+  startBtn.innerText = "Start";
+
+  const blob = new Blob(recordedChunks, { type: videoMimeType });
 
   const buffer = Buffer.from(await blob.arrayBuffer());
 
-  const { filePath } = await dialog.showSaveDialog({
-    buttonLabel: "Save Video",
-    defaultPath: `vid-${Date.now()}.webm`
-  });
+  const { filePath } = await dialog.showSaveDialog({ buttonLabel: "Save Video", defaultPath: `vid-${Date.now()}.webm` });
 
   console.log(filePath);
 
-  wrtieFile(filePath, buffer, () => console.log("Video Saved Successfuly"));
+  writeFile(filePath, buffer, () => console.log("Video Saved Successfuly"));
 }
