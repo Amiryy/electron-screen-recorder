@@ -43,8 +43,13 @@ async function getVideoSources() {
 
 async function selectSource(source) {
   videoSelectBtn.innerText = source.name;
-  startBtn.classList.remove("disabled");
-  stopBtn.classList.remove("disabled");
+  // make controls enabled to use once we select a source
+  if(startBtn.classList.contains("disabled")) {
+    startBtn.classList.remove("disabled");
+  }
+  if(stopBtn.classList.contains("disabled")) {
+    stopBtn.classList.remove("disabled");
+  }
 
   const contstrains = {
     audio: false,
@@ -74,7 +79,6 @@ async function selectSource(source) {
 }
 
 function handleDataAvailable(e) {
-  console.log("video data available");
   recordedChunks.push(e.data);
 }
 
@@ -92,8 +96,6 @@ async function handleStop(e) {
   const buffer = Buffer.from(await blob.arrayBuffer());
 
   const { filePath } = await dialog.showSaveDialog({ buttonLabel: "Save Video", defaultPath: `vid-${Date.now()}.webm` });
-
-  console.log(filePath);
 
   writeFile(filePath, buffer, () => console.log("Video Saved Successfuly"));
 }
